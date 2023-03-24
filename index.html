@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
     <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js" integrity="sha512-Abr21JO2YqcJ03XGZRPuZSWKBhJpUAR6+2wH5zBeO4wAw4oksr8PRdF+BKIRsxvCdq+Mv4670rZ+dLnIyabbGw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 	<style>
 		html, body {
@@ -101,7 +101,7 @@
 
     	};
 
-    L.marker([-33.06738, 151.58848]).addTo(map).bindPopup("Wangi RSL Jetty");
+    // L.marker([-33.06738, 151.58848]).addTo(map).bindPopup("Wangi RSL Jetty");
 
 	// const overlays = {
 	// 	'Cities': cities
@@ -109,6 +109,38 @@
 
 	const layerControl = L.control.layers(baseLayers).addTo(map);
 
+    // mooring style
+    var mooringStyle = {
+        "color": "#ff7800",
+        "weight": 5,
+        "opacity": 0.65
+    };
+
+
+    // add moorings
+
+    var mooringStyle = {
+            color:          '#050',
+            fillColor:      '#199900',
+            fillOpacity:    1,
+            radius:         6
+        };
+
+    const geojsonLayer = new L.GeoJSON.AJAX("data/moorings.geojson",{
+        pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, mooringStyle);
+        },
+        onEachFeature: function (feature, layer) {
+            console.log('ff');
+            layer.bindPopup('<h1>'+feature.properties.name+'</h1>');
+        },
+    });       
+
+
+    geojsonLayer.on('data:loaded', function(){
+        console.log(geojsonLayer);
+        geojsonLayer.addTo(map);
+    });
 
 
 
@@ -116,16 +148,12 @@
     var gURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNyTy4XruChW8t5cDKK-WNbMJ3k_1pKp_OYhBjKVxypBr3HOAUpKggYiHYxtMGOgjY9l2F4xLETEXO/pub?gid=995759205&single=true&output=csv';
 
     var papa_cb = function(results){
-
         if(results.errors.length !== 0){
             // handle errors
         }
-
         else{
-            console.log(results.data);
+            // console.log(results.data);
         }
-
-
     }    
 
     var data = Papa.parse(gURL, {
@@ -157,6 +185,8 @@
 
     // legend.addTo(map);
 
+
+    L.control.scale().addTo(map);
 
 </script>
 
