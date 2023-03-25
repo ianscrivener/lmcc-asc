@@ -2,9 +2,12 @@
   "name": "lmcc-asc",
   "version": "1.0.0",
   "description": "A simple leaflet spatial data viewer hosted on Githuib Pages",
-  "main": "index.html",
+  "main": "app.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "all": "app.js -moorings",
+    "moorings": "app.js -all"
   },
   "repository": {
     "type": "git",
@@ -24,6 +27,10 @@
   },
   "homepage": "https://github.com/ianscrivener/lmcc-asc#readme",
   "dependencies": {
-    "lodash": "^4.17.21"
+    "chalk": "^5.2.0",
+    "dotenv": "^16.0.3",
+    "lodash": "^4.17.21",
+    "minimist": "^1.2.8",
+    "node-fetch": "^2.6.9"
   }
 }
