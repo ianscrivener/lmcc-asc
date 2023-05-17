@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0" />
+  <title>Leaflet Read GeoJSON-Tile(LineString) Test</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" />
+  <script src='https://unpkg.com/@turf/turf/turf.min.js'></script>
+  <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.min.js"></script>
+  <script src="https://unpkg.com/leaflet-hash@0.2.1/leaflet-hash.js"></script>
+
+  <style>
+    #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+    }
+
+    .leaflet-control-container::after {
+      content: url(https://maps.gsi.go.jp/image/map/crosshairs.png);
+      z-index: 1000;
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <script>
+    // Initalize map
+    const map = L.map("map", L.extend({
+      minZoom: 14,
+      zoom: 18,
+      maxZoom: 22,
+      center: [35.6, 139.6],
+    }, L.Hash.parseHash(location.hash)));
+    map.zoomControl.setPosition("bottomright");
+    L.hash(map);
+
+    map.on('click', function(e) {
+        let popup = L.popup()
+          .setLatLng(e.latlng)
+          .setContent(`
+            <p class="p-small">
+              lat: ${e.latlng.lat}
+            </p>
+            <p class="p-small">
+            lng: ${e.latlng.lng}
+            </p>
+          `)
+          .openOn(map);
+    } );
+
+
+    // GeoJSON VectorTileLayer
+const gsi_river = L.tileLayer(L.Util.emptyImageUrl, {
+      attribution: "地理院地図情報（河川中心線）",
+      maxZoom: 22,
+      minZoom: 15,
+      maxNativeZoom: 16,
+      minNativeZoom: 16,
+    }).on("tileload", function(event) {
+      // Add tileload event handler to load geojson and add geojson layer
+      const url = "https://cyberjapandata.gsi.go.jp/xyz/experimental_rvrcl/{z}/{x}/{y}.geojson";
+      fetch(L.Util.template(url, event.coords)).then(a => a.ok ? a.json() : null).then(geojson => {
+        if (!geojson || !this._map) return;
+        event.tile.geojson = L.geoJSON(geojson, {
+          style: function(geojson) {
+            return {
+              weight: 1.2,
+              color: "blue",
+              opacity: 0.5,
+              fillOpacity: 0.0,
+            };
+          }
+        }).addTo(this._map);
+      });
+    }).on("tileunload", function(event) {
+      // Add tileunload event handler to remove geojson layer
+      if (event.tile.geojson && this._map)
+        this._map.removeLayer(event.tile.geojson);
+    });
+
+
+    // basemap layers
+    const osm = L.tileLayer('http://tile.openstreetmap.jp/{z}/{x}/{y}.png', {
+        attribution: "<a href='http://osm.org/copyright' target='_blank'>OpenStreetMap</a> contributors",
+        // minZoom: 10,
+        maxNativeZoom: 18,
+        maxZoom: 22,
+    });
+
+    // Stamen Terrain
+    const stamen_terrain = L.tileLayer(
+        'http://{s}.tile.stamen.com/terrain/{z}/{x}/{y}.png',
+        {
+            attribution: '<a id="home-link" target="_top" href="http://maps.stamen.com/">Map tiles</a> by <a target="_top" href="http://stamen.com">Stamen Design</a>, under <a target="_top" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data © <a target="_top" href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>.',
+            maxNativeZoom: 14,
+            maxZoom: 22,
+        });
+    const stamen_toner = L.tileLayer('http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png',
+        {
+            attribution: '<a id="home-link" target="_top" href="../">Map tiles</a> by <a target="_top" href="http://stamen.com">Stamen Design</a>, under <a target="_top" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a target="_top" href="http://openstreetmap.org">OpenStreetMap</a>, under <a target="_top" href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.',
+            maxNativeZoom: 18,
+            maxZoom: 22,
+        });
+    const stamen_watercolor = L.tileLayer(
+        'http://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.png',
+        {
+            attribution: 'Map tiles by <a href="https://stamen.com/" target="_blank">Stamen Design</a>, under <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank">CC BY 3.0</a>. © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors.',
+            maxNativeZoom: 16,
+            maxZoom: 22,
+        });
+
+    // ArcGIS World Imaginary
+    const arcgis_world_imaginary = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxNativeZoom: 17,
+            maxZoom: 22,
+        });
+
+    const gsi_std = L.tileLayer(
+'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+        {
+            attribution: "<a href='http://portal.cyberjapan.jp/help/termsofuse.html' target='_blank'>地理院タイル（標準地図）</a>",
+            maxNativeZoom: 18,
+            maxZoom: 22,
+            opacity:1
+        });
+
+    const gsi_pale = L.tileLayer(
+        'http://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+        {
+            attribution: "<a href='http://portal.cyberjapan.jp/help/termsofuse.html' target='_blank'>地理院タイル（淡色地図）</a>",
+            maxNativeZoom: 18,
+            maxZoom: 22,
+        });
+
+    const gsi_ort = L.tileLayer(
+'https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg',
+        {
+            attribution: "<a href='http://portal.cyberjapan.jp/help/termsofuse.html' target='_blank'>地理院タイル（オルソ）</a>",
+            maxNativeZoom: 17,
+            maxZoom: 22,
+            opacity:0.9
+        });
+
+    const gsi_blank = L.tileLayer(
+'https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png',
+        {
+            attribution: "<a href='http://portal.cyberjapan.jp/help/termsofuse.html' target='_blank'>地理院タイル（白地図）</a>",
+            maxNativeZoom: 14,
+            maxZoom: 22,
+            opacity:1,
+        });
+
+    const gsi_relief = L.tileLayer(
+        "https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png",
+        {
+            attribution: "<a href='http://maps.gsi.go.jp/development/ichiran.html'>地理院タイル</a>",
+            maxNativeZoom: 15,
+            maxZoom: 22,
+        });
+
+    L.control.scale({
+        imperial: false,
+        metric: true,
+    }).addTo(map);
+
+    const baseLayers ={
+        "地理院タイル（標準地図）": gsi_std,
+        "地理院タイル（淡色地図）": gsi_pale,
+        "地理院タイル（オルソ）": gsi_ort,
+        "地理院タイル（白地図）": gsi_blank,
+        "地理院タイル（標高図）": gsi_relief,
+        "Stamen Terrain": stamen_terrain,
+        "Stamen Toner": stamen_toner,
+        "Stamen WaterColor": stamen_watercolor,
+        "World Imaginary": arcgis_world_imaginary,
+        'osm': osm.addTo(map),
+    };
+
+    const overlays = {"gsi_river": gsi_river};
+
+    L.control.layers(baseLayers, overlays,{position:'topright',collapsed:true}).addTo(map);
+    const hash = L.hash(map);
+
+  </script>
+</body>
+
+</html>
